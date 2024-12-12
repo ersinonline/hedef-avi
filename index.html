@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kullanıcı oyunu oynayarak hedefi vurmaya çalışır. Oyuncunun hedefi vurmaya çalıştığı sürece puanı artar. Oyunun amacı en yüksek puanı elde etmektir.">
+    <title>Hedef Avı | TeknoKapsül</title>
+    <link rel="shortcut icon" href="/Pictures/logo.ico" type="image/x-icon">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fff4cc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #FFB700;
+            padding: 20px 40px;
+            text-align: center;
+            color: white;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        #score, #timer {
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            position: absolute;
+            top: 20px;
+        }
+
+        #score {
+            left: 20px;
+        }
+
+        #timer {
+            right: 20px;
+        }
+
+        #gameArea {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            width: 100vw;
+            height: calc(100vh - 180px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .balloon {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-image: url('https://i.hizliresim.com/5npc23b.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease-out, background-color 0.3s;
+        }
+
+        .balloon:active {
+            transform: scale(1.2);
+        }
+
+        .balloon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 150, 0, 0.5);
+        }
+
+        footer {
+            background-color: #FFB700;
+            color: white;
+            text-align: center;
+            padding: 15px 25px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        /* Kaydırma çubuğu stil */
+        ::-webkit-scrollbar {
+            width: 12px;
+            background-color: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #FFB700;
+            border-radius: 10px;
+            border: 3px solid #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #FFB700;
+        }
+
+        /* Mobil uyumlu stil */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 24px;
+            }
+
+            #score, #timer {
+                font-size: 24px;
+            }
+
+            .balloon {
+                width: 80px;
+                height: 80px;
+            }
+
+            footer p {
+                font-size: 14px;
+            }
+        }
+
+        /* Daha küçük ekranlar için */
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 20px;
+            }
+
+            #score, #timer {
+                font-size: 20px;
+            }
+
+            .balloon {
+                width: 70px;
+                height: 70px;
+            }
+
+            footer p {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Hedef Avı</h1>
+        <div id="score">Puan: 0</div>
+        <div id="timer">Süre: 60</div>
+    </header>
+
+    <div id="gameArea"></div>
+
+    <footer>
+        <p>© 2024 TeknoKapsül</p>
+    </footer>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        let score = 0;
+        let timeLeft = 60;
+        let balloonSize = 100;
+        let balloonInterval, timerInterval;
+
+        // Ses dosyasını yükleme
+        const balloonSound = new Audio('https://github.com/ersinonline/hedef-avi/raw/refs/heads/main/ses.mp3');
+
+        // Rastgele pozisyon hesaplayan fonksiyon
+        function getRandomPosition() {
+            const x = Math.floor(Math.random() * (gameArea.clientWidth - balloonSize));
+            const y = Math.floor(Math.random() * (gameArea.clientHeight - balloonSize));
+            return { x, y };
+        }
+
+        // Balon oluşturan fonksiyon
+        function createBalloon() {
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon';
+            balloon.style.width = `${balloonSize}px`;
+            balloon.style.height = `${balloonSize}px`;
+            const { x, y } = getRandomPosition();
+            balloon.style.left = `${x}px`;
+            balloon.style.top = `${y}px`;
+
+            balloon.addEventListener('click', () => {
+                score++;
+                scoreElement.textContent = `Puan: ${score}`;
+                balloon.style.backgroundColor = '#FF0000'; // Tıklayınca renk değişimi
+                balloonSound.play(); // Ses çal
+                setTimeout(() => gameArea.removeChild(balloon), 200); // Balon patladıktan sonra kaybolur
+            });
+
+            gameArea.appendChild(balloon);
+        }
+
+        // Sürekli balon ekleyen fonksiyon
+        function startBalloonGeneration() {
+            balloonInterval = setInterval(createBalloon, 500); // Her 0.5 saniyede bir yeni balon eklenir
+        }
+
+        // Zamanlayıcıyı başlatan fonksiyon
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = `Süre: ${timeLeft}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    clearInterval(balloonInterval);
+                    alert('Süre doldu! Puanınız: ' + score);
+                    resetGame(); // Oyun bittikten sonra sıfırla
+                }
+            }, 1000);
+        }
+
+        // Oyunu sıfırlayan fonksiyon
+        function resetGame() {
+            score = 0;
+            timeLeft = 60;
+            scoreElement.textContent = `Puan: ${score}`;
+            timerElement.textContent = `Süre: ${timeLeft}`;
+            const balloons = document.querySelectorAll('.balloon');
+            balloons.forEach(balloon => gameArea.removeChild(balloon)); // Tüm balonları kaldır
+            setTimeout(startGame, 1000); // 1 saniye bekleyip oyunu yeniden başlat
+        }
+
+        // Oyunu başlatan fonksiyon
+        function startGame() {
+            startTimer();
+            startBalloonGeneration();
+        }
+
+        // Sayfa yüklendiğinde oyunu başlat
+        startGame();
+    </script>
+
+</body>
+</html>
